@@ -1,0 +1,8 @@
+CÁCH LẤY FILE APK (không cần cài Android Studio)
+1. Tạo tài khoản GitHub (miễn phí) và tạo một repository mới (để Private cũng được).
+2. Tải toàn bộ nội dung thư mục này lên repository (giữ nguyên cả thư mục .github).
+3. Vào tab "Actions" > "Build APK" > chờ chạy xong (khoảng 3-5 phút).
+4. Mở lần chạy đó, kéo xuống mục "Artifacts", tải "Sinjid-apk" (file zip chứa app-debug.apk).
+5. Chép app-debug.apk vào điện thoại, mở lên, cho phép "cài từ nguồn không xác định" và cài đặt.
+Game chạy ngang màn hình, toàn màn hình, bằng Ruffle (phát Flash).
+Lưu ý: game dùng bàn phím/chuột nên điều khiển cảm ứng có thể chưa đầy đủ.
