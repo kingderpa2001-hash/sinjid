@@ -1,15 +1,89 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}#p{width:100vw;height:100vh}</style>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;-webkit-user-select:none;user-select:none}
+#p{width:100vw;height:100vh}
+#ui{position:fixed;inset:0;pointer-events:none;z-index:9}
+#ui.hide .ctl{display:none}
+.ctl,#tg{pointer-events:auto;touch-action:none}
+#base{position:absolute;left:28px;bottom:28px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.4)}
+#knob{position:absolute;left:43px;top:43px;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.45);border:2px solid rgba(255,255,255,.7)}
+#act{position:absolute;right:36px;bottom:44px;width:104px;height:104px;border-radius:50%;background:rgba(255,255,255,.22);border:2px solid rgba(255,255,255,.55);color:#fff;font:bold 16px sans-serif;display:flex;align-items:center;justify-content:center;text-align:center}
+#act.on{background:rgba(255,255,255,.5)}
+#tg{position:absolute;right:10px;top:10px;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.25);border:2px solid rgba(255,255,255,.5);color:#fff;font-size:22px;display:flex;align-items:center;justify-content:center}
+</style>
 <script>window.RufflePlayer={config:{publicPath:"ruffle/"}};</script>
 <script src="ruffle/ruffle.js"></script>
 </head><body><div id="p"></div>
+<div id="ui">
+  <div class="ctl" id="base"><div id="knob"></div></div>
+  <div class="ctl" id="act">Tương<br>tác</div>
+  <div id="tg">🎮</div>
+</div>
 <script>
+var player;
 window.addEventListener("load",function(){
-  var r=window.RufflePlayer.newest(), p=r.createPlayer();
-  p.style.width="100%";p.style.height="100%";
-  document.getElementById("p").appendChild(p);
-  p.ruffle().load({url:"game.swf",autoplay:"on",unmuteOverlay:"hidden",letterbox:"on",scale:"showAll",splashScreen:false});
+  var r=window.RufflePlayer.newest(); player=r.createPlayer();
+  player.style.width="100%";player.style.height="100%";
+  document.getElementById("p").appendChild(player);
+  player.ruffle().load({url:"game.swf",autoplay:"on",unmuteOverlay:"hidden",letterbox:"on",scale:"showAll",splashScreen:false});
 });
+var CODES={w:["KeyW",87],a:["KeyA",65],s:["KeyS",83],d:["KeyD",68]," ":["Space",32]};
+var held={},timers={};
+function fire(type,k,rep){
+  var c=CODES[k];
+  var e=new KeyboardEvent(type,{key:k,code:c[0],keyCode:c[1],which:c[1],repeat:!!rep,bubbles:true,cancelable:true});
+  (player||document).dispatchEvent(e);
+}
+function press(k){
+  if(held[k])return; held[k]=true;
+  if(player)player.focus();
+  fire("keydown",k,false);
+  timers[k]=setInterval(function(){fire("keydown",k,true)},100);
+}
+function release(k){
+  if(!held[k])return; held[k]=false;
+  clearInterval(timers[k]); fire("keyup",k,false);
+}
+function releaseAll(){Object.keys(held).forEach(release);}
+
+/* Joystick */
+var base=document.getElementById("base"),knob=document.getElementById("knob");
+var R=75,KR=32,activeId=null;
+function stick(ev){
+  var b=base.getBoundingClientRect();
+  var dx=ev.clientX-(b.left+b.width/2), dy=ev.clientY-(b.top+b.height/2);
+  var d=Math.sqrt(dx*dx+dy*dy), max=R-KR+10;
+  if(d>max){dx=dx/d*max;dy=dy/d*max;d=max;}
+  knob.style.left=(R-KR+dx)+"px"; knob.style.top=(R-KR+dy)+"px";
+  var t=max*0.35;
+  (dx<-t)?press("a"):release("a");
+  (dx>t)?press("d"):release("d");
+  (dy<-t)?press("w"):release("w");
+  (dy>t)?press("s"):release("s");
+}
+function stickEnd(){
+  activeId=null; knob.style.left=(R-KR)+"px"; knob.style.top=(R-KR)+"px";
+  ["w","a","s","d"].forEach(release);
+}
+base.addEventListener("pointerdown",function(ev){ev.preventDefault();activeId=ev.pointerId;base.setPointerCapture(ev.pointerId);stick(ev);});
+base.addEventListener("pointermove",function(ev){if(ev.pointerId===activeId){ev.preventDefault();stick(ev);}});
+base.addEventListener("pointerup",stickEnd);
+base.addEventListener("pointercancel",stickEnd);
+
+/* Nút tương tác = SPACE */
+var act=document.getElementById("act");
+act.addEventListener("pointerdown",function(ev){ev.preventDefault();act.setPointerCapture(ev.pointerId);act.classList.add("on");press(" ");});
+function actEnd(){act.classList.remove("on");release(" ");}
+act.addEventListener("pointerup",actEnd);
+act.addEventListener("pointercancel",actEnd);
+
+/* Nút ẩn/hiện */
+var ui=document.getElementById("ui");
+document.getElementById("tg").addEventListener("click",function(){
+  ui.classList.toggle("hide");
+  if(ui.classList.contains("hide")){stickEnd();actEnd();}
+});
+document.addEventListener("contextmenu",function(e){e.preventDefault();});
 </script></body></html>
